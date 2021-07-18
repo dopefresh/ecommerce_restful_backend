@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "backend"
+version = "0.1.0"
+description = ""
+authors = ["dopefresh <dopefresh4000@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+Django = "^3.2.5"
+djangorestframework = "^3.12.4"
+environs = "^9.3.2"
+django-cors-headers = "^3.7.0"
+psycopg2 = "^2.9.1"
+django-oauth-toolkit = "^1.5.0"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

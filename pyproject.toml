@@ -11,7 +11,8 @@ djangorestframework = "^3.12.4"
 environs = "^9.3.2"
 django-cors-headers = "^3.7.0"
 psycopg2 = "^2.9.1"
-django-oauth-toolkit = "^1.5.0"
+djangorestframework-simplejwt = "^4.7.2"
+loguru = "^0.5.3"
 
 [tool.poetry.dev-dependencies]
 

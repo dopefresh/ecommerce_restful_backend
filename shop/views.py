@@ -1,4 +1,4 @@
-from django.db.models import Q
+from django.db.models import Q, F
 from django.urls import reverse
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponseRedirect
@@ -19,43 +19,60 @@ from loguru import logger
 
 class CartView(APIView):
     permission_classes = [IsAuthenticated]
-
-    def get_object(self, user, ordered, shipped):
-        try:
-            cart = Cart.objects.get(user=user, ordered=ordered, shipped=shipped)
-            return cart
-        except Cart.DoesNotExist:
-            raise status.HTTP_404_NOT_FOUND
-
+    
     def get(self, request, format=None):
         cart, created = Cart.objects.get_or_create(user=request.user)
-        serializer = CartSerializer(cart, many=False)
-        return Response(serializer.data)
+        cart_items = cart.cart_items.all()
+        if not len(cart_items):
+            return Response('', status=status.HTTP_204_NO_CONTENT)
+        if len(cart_items) == 1:
+            serializer = CartItemSerializer(cart_items, many=False) 
+            return Response(serializer.data)
+        
+        serializer = CartItemSerializer(cart_items, many=True)
+        return Response(serializer.data) 
+
+    def post(self, request, format=None):
+        try:
+            quantity=int(request.data.get('quantity'))
+            if quantity <= 0:
+                return Response('quantity <= 0', status=status.HTTP_400_BAD_REQUEST)
+
+            CartItem.objects.create(
+                item=Item.objects.get(slug=request.data.get('slug')), 
+                quantity=quantity, 
+                cart=Cart.objects.get(user=request.user)
+            )
+            return Response('', status=status.HTTP_201_CREATED)
+        except Exception as e:
+            logger.error(str(e))
+            return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
 
     def patch(self, request, format=None):
-        cart, created = self.get_or_create(user=request.user)
-        cart_items = cart.cart_item_set.all()
-        serializer = CartItemSerializer(cart_items, data=request.data, many=True)
-        if serializer.is_valid():
-            serializer.save()
-            for cart_item in cart.cart_items_set.all():
-                cart_item.quantity = serializer.data.get(cart_item.id)
-                cart_item.save() 
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            cart_item = CartItem.objects.get(
+                cart__user=request.user, 
+                item__slug=request.data.get('slug')
+            )
+            quantity = int(request.data.get('quantity'))
+            if quantity <= 0:
+                return Response('quantity <= 0', status=status.HTTP_400_BAD_REQUEST)
+            
+            cart_item.quantity = quantity
+            cart_item.save()
+            return Response('', status=status.HTTP_202_ACCEPTED)
+        except Exception as e:
+            logger.info(str(e))
+            return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, format=None):
-        cart = self.get_object(user=request.user, ordered=False, shipped=False)
-        cart.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-    def post(self, request, slug, format=None):
-        cart = Cart.objects.get_or_create(user=request.user, ordered=False, shipped=False)
         try:
-            item = Item.objects.get(slug=slug)
-            cart_item = CartItem.objects.create(item=item, user=request.user, cart=cart)
+            cart_item = CartItem.objects.get(cart__user=request.user, item__slug=request.data.get('slug'))
+            cart_item.delete() 
+            return Response('', status=status.HTTP_202_ACCEPTED)
         except Exception as e:
-            logger.error(e)
+            logger.info(e)
+            return Response(e, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ItemView(APIView):
@@ -72,18 +89,22 @@ class SearchView(APIView):
     
     def get(self, request, format=None):
         item_serializer, sub_category_serializer, category_serializer = '', '', ''
+        query = request.query_params
+        title = query.get('title') if 'title' in query else '$$$$$$'
+        description = query.get('description') if 'description' in query else '$$$$$$'
+        logger.info(title)
 
-        items = Item.objects.filter(Q(title__icontains=request.query_params) | Q(description__icontains=request.query_params))
-        if items.exists():
-            item_serializer = ItemSerializer(items, many=True) 
+        items = Item.objects.filter(
+            Q(title__icontains=title) | 
+            Q(description__icontains=description)
+        )
+        item_serializer = ItemSerializer(items, many=True) 
         
-        categories = Category.objects.filter(title__icontains=request.query_params)
-        if categories.exists():
-            category_serializer = CategorySerializer(categories, many=True)
+        categories = Category.objects.filter(title__icontains=title)
+        category_serializer = CategorySerializer(categories, many=True)
         
-        sub_categories = SubCategory.objects.filter(title__icontains=request.query_params)
-        if sub_categories.exists():
-            sub_category_serializer = SubCategorySerializer(sub_categories, many=True)
+        sub_categories = SubCategory.objects.filter(title__icontains=title)
+        sub_category_serializer = SubCategorySerializer(sub_categories, many=True)
         
         return Response(
             {
@@ -98,7 +119,6 @@ class CategoryView(APIView):
     permission_classes = []
 
     def get(self, request, format=None):
-        print('We are here')
         categories = Category.objects.all()
         category_serializer = CategorySerializer(categories, many=True)
         return Response(category_serializer.data)
@@ -110,42 +130,38 @@ class SubCategoryView(APIView):
     def get(self, request, slug, format=None):
         try:
             category = Category.objects.get(slug=slug)
-            sub_categories = category.sub_category_set.all()
+            sub_categories = category.subcategory_set.all()
             sub_category_serializer = SubCategorySerializer(sub_categories, many=True)
             return Response(sub_category_serializer.data)
-        except Category.DoesNotExist:
-            raise status.HTTP_404_NOT_FOUND
+        except Exception as e:
+            return Response(str(e), status=status.HTTP_404_NOT_FOUND)
+
+
+class ItemsView(APIView):
+    permission_classes = []
+
+    def get(self, request, category_slug, subcategory_slug,format=None):
+        try:
+            items = Item.objects.filter(sub_category__slug=subcategory_slug)
+            serializer = ItemSerializer(items, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
 
 
 class CheckoutView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, slug, format=None):
-        try:
-            cart = Cart.objects.get(user=request.user)
-            cart_items = cart.cart_item_set.all()
-            cart_item_serializer = CartItemSerializer(cart_items, many=True)
-            return Response(cart_item_serializer.data)
-        except Cart.DoesNotExist:
-            raise status.HTTP_404_NOT_FOUND
+    def get(self, request, format=None):
+        cart, created = Cart.objects.get_or_create(user=request.user)
+        cart_items = cart.cart_items.all()
+        if not len(cart_items):
+            return Response('', status=status.HTTP_204_NO_CONTENT)
+        if len(cart_items) == 1:
+            serializer = CartItemSerializer(cart_items, many=False) 
+            return Response(serializer.data)
         
-
-class SignUpView(APIView):
-    permission_classes = []
-    
-    def get(self, request):
-        pass
-
-    def post(self, request):
-        user_serializer = UserSerializer(data=request.data)
-        if user_serializer.is_valid():
-            logger.info(user_serializer.data)
-            serializer_data = user_serializer.data
-            serializer_data.pop('groups')
-            serializer_data.pop('user_permissions')
-            serializer_data['is_active'] = True
-            User.objects.create_user(**serializer_data) 
-            return Response(serializer_data, status=HTTP_201_CREATED)
-
-        return Response(user_serializer._errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer = CartItemSerializer(cart_items, many=True)
+        return Response(serializer.data) 
+        
 

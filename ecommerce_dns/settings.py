@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'djoser',
     'shop',
+    'drf_spectacular',
 ]
 
 MIDDLEWARE = [
@@ -134,7 +135,7 @@ USE_I18N = True
 
 USE_L10N = True
 
-USE_TZ = True
+USE_TZ = False
 
 
 # Static files (CSS, JavaScript, Images)
@@ -157,7 +158,14 @@ REST_FRAMEWORK = {
     ), 
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
-    )
+    ),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Your Project API',
+    'DESCRIPTION': 'Your project description',
+    'VERSION': '1.0.0',
 }
 
 SIMPLE_JWT = {

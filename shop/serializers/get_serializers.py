@@ -32,16 +32,14 @@ class CartSerializer(serializers.ModelSerializer):
 
 
 class SubCategorySerializer(serializers.ModelSerializer):
-    items = ItemSerializer(many=True, read_only=True)
 
     class Meta:
         model = SubCategory
-        fields = ('title', 'category', 'items',)
+        fields = '__all__'
 
 
 class CategorySerializer(serializers.ModelSerializer):
-    sub_categories = SubCategorySerializer(many=True, read_only=True)
 
     class Meta:
         model = Category
-        fields = ('title', 'sub_categories',)
+        fields = '__all__'

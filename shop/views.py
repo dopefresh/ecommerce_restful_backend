@@ -1,6 +1,6 @@
 from django.db.models import Q, F
 from django.shortcuts import get_object_or_404
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from django.contrib.auth.models import User
 from django.contrib.postgres.search import SearchVector
 
@@ -34,6 +34,37 @@ class JWTScheme(OpenApiAuthenticationExtension):
             "name": "Authorization",
             "description": "Value should be formatted: `Bearer <key>`"
         }
+
+def get_product_image(request, slug):
+    product = Item.objects.get(slug=slug)
+    html = f'<img src="{product.product_image.url}" alt="">'
+    return HttpResponse(html)
+
+
+def get_products_images(request, category_slug, subcategory_slug):
+    products = Item.objects.filter(sub_category__slug=subcategory_slug)
+    html = ''
+    for product in products:
+        strings = f'<img src="{product.product_image.url}" alt="">\n'
+        strings += f'<p>{product.slug}</p>\n\n'
+        html += strings
+    return HttpResponse(html)
+
+
+def get_company_logos(request, pk):
+    company = Company.objects.get(pk=pk)
+    html = f'<img src="{company.logo.url}" alt="">'
+    return HttpResponse(html)
+
+
+def get_companies_logos(request):
+    companies = Company.objects.all()
+    html = ''
+    for company in companies:
+        strings = f'<img src="{company.logo.url}" alt="">\n'
+        strings += f'<p>{company.name}</p>\n\n'
+        html += strings
+    return HttpResponse(html)
 
 
 class CartView(APIView):

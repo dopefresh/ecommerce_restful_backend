@@ -1,6 +1,28 @@
 from django.contrib import admin
 
-from .models import Item, CartItem, Cart, SubCategory, Category
+from .models import Item, CartItem, Cart, SubCategory, Category, Company, Employee
+
+
+class EmployeeAdmin(admin.ModelAdmin):
+    fields = ['user', 'company', 'phone_number']
+    model = Employee
+    list_display = ['user', 'company']
+    list_filter = ['user', 'company']
+    search_fields = ['user', 'company', 'phone_number']
+
+
+class EmployeeInline(admin.TabularInline):
+    fields = ['user', 'company']
+    model = Employee
+
+
+class CompanyAdmin(admin.ModelAdmin):
+    fields = ['name', 'location', 'phone_number', 'logo']
+    model = Company
+    extra = 1
+    list_display = ('name', 'phone_number',)
+    list_filter = ('name', 'phone_number',)
+    search_fields = ('name', 'phone_number', 'location',)
 
 
 class ItemAdmin(admin.TabularInline):
@@ -50,6 +72,8 @@ admin.site.register(SubCategory, SubCategoryAdmin)
 admin.site.register(Category, CategoryAdmin)
 admin.site.register(CartItem)
 admin.site.register(Cart)
+admin.site.register(Employee, EmployeeAdmin)
+admin.site.register(Company, CompanyAdmin)
 # admin.site.register(Item)
 # admin.site.register(SubCategory)
 # admin.site.register(Category)

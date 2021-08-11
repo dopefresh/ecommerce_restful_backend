@@ -1,18 +1,47 @@
 from django.db import models
 from django.conf import settings
 from django.utils.text import slugify
+from django.contrib.auth.models import User
+
+
+def company_logo_directory(instance, filename):
+    return f'{instance.name}/logos/{filename}'
+
+
+def company_product_directory(instance, filename):
+    return f'{instance.company.name}/products/{filename}'
+
+
+class Company(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    location = models.CharField(max_length=100)
+    phone_number = models.CharField(
+        max_length=12, 
+        blank=False, null=False
+    )
+    logo = models.ImageField(
+        upload_to=company_logo_directory,
+        blank=True, null=True
+    )
+    
+    class Meta:
+        db_table = 'company'
+        verbose_name_plural = "Компании"
+
+    def __str__(self):
+        return f'Company name: {self.name}\n{self.phone_number}\n{self.location}'
 
 
 class Category(models.Model):
     """
     Category of Product in ecommerce site
     """
-    slug = models.SlugField()
+    slug = models.SlugField(blank=True)
     title = models.CharField(max_length=50, unique=True)
 
     class Meta:
         db_table = 'category'
-        verbose_name_plural = "categories"
+        verbose_name_plural = "Категории товаров"
 
     def __str__(self):
         return self.title
@@ -26,13 +55,13 @@ class SubCategory(models.Model):
     """
     Subcategory of Product in ecommerce site
     """
-    slug = models.SlugField()
+    slug = models.SlugField(blank=True)
     title = models.CharField(max_length=50, unique=True)
     category = models.ForeignKey('Category', on_delete=models.CASCADE)
     
     class Meta:
         db_table = 'sub_category'
-        verbose_name_plural = "sub_categories"
+        verbose_name_plural = "Подкатегории товаров"
 
     def __str__(self):
         return self.title
@@ -48,19 +77,28 @@ class Item(models.Model):
     Product in ecommerce site
     """
     title = models.CharField(max_length=50, blank=False, null=False, unique=True)
-    description = models.TextField()
+    description = models.TextField(blank=True, null=True)
     price = models.IntegerField(blank=False, null=False)
+    product_image = models.ImageField(
+        upload_to=company_product_directory,
+        blank=True, null=True
+    )
     
-    slug = models.SlugField()
+    slug = models.SlugField(blank=True)
     sub_category = models.ForeignKey(
         'SubCategory', 
+        on_delete=models.SET_NULL,
+        null=True
+    )
+    company = models.ForeignKey(
+        'Company',
         on_delete=models.SET_NULL,
         null=True
     )
     
     class Meta:
         db_table = 'item'
-        verbose_name_plural = "items"
+        verbose_name_plural = "Продукты"
 
     def __str__(self):
         return f'{self.title} {self.price}'
@@ -80,7 +118,7 @@ class CartItem(models.Model):
 
     class Meta:
         db_table = 'cart_item'
-        verbose_name_plural = "cart_items"
+        verbose_name_plural = "Добавленные в корзину пользователем продукты"
         unique_together=('item', 'cart',)
 
     def __str__(self):
@@ -104,7 +142,27 @@ class Cart(models.Model):
     
     class Meta:
         db_table = 'cart'
-        verbose_name_plural = "carts"
+        verbose_name_plural = "Корзина пользователя"
 
     def __str__(self):
         return str(self.user)
+
+
+class Employee(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    company= models.ForeignKey(
+        'Company', 
+        on_delete=models.SET_NULL,
+        blank=True, null=True
+    )
+    phone_number = models.CharField(
+        max_length=12, 
+        blank=True, null=True
+    )
+
+    class Meta:
+        db_table = 'employee'
+        verbose_name_plural = "Работники компании"
+    
+    def __str__(self):
+        return f'{self.user}\n{self.company}\n{self.phone_number}'

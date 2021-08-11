@@ -88,6 +88,9 @@ class CartItem(models.Model):
 
 
 class Cart(models.Model):
+    """
+    User's cart object
+    """
     ordered = models.BooleanField(default=False)
     shipped = models.BooleanField(default=False)
     ordered_date = models.DateTimeField(

@@ -2,6 +2,7 @@ from django.db.models import Q, F
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponseRedirect
 from django.contrib.auth.models import User
+from django.contrib.postgres.search import SearchVector
 
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -9,6 +10,7 @@ from rest_framework.reverse import reverse
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from shop.models import Item, CartItem, Cart, SubCategory, Category
 from shop.serializers.get_serializers import ItemSerializer, CartItemSerializer, CartSerializer, SubCategorySerializer, CategorySerializer
@@ -17,7 +19,21 @@ from shop.serializers.post_serializers import CreateCartItemSerializer
 from loguru import logger
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.extensions import OpenApiAuthenticationExtension
 from typing import List
+
+
+class JWTScheme(OpenApiAuthenticationExtension):
+    target_class = 'JWTAuthentication'
+    name = "JWTAuthentication"
+
+    def get_security_definition(self, auto_schema):
+        return {
+            "type": "apiKey",
+            "in": "header",
+            "name": "Authorization",
+            "description": "Value should be formatted: `Bearer <key>`"
+        }
 
 
 class CartView(APIView):
@@ -68,7 +84,7 @@ class CartView(APIView):
         description="Change item's quantity in user's cart, !!!Sort ascending by title before calling this method. Also call this method with all user's cart items !!!",
         tags=["Cart"],
         request=CreateCartItemSerializer,
-        responses={202: ''}
+        responses={202: ''},
     )
     def patch(self, request):
         try:
@@ -86,8 +102,10 @@ class CartView(APIView):
             return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(
-        operation_id="Delete item from user's cart",
-        tags=["Cart"]
+        description="Delete item from user's cart",
+        tags=["Cart"],
+        request=CreateCartItemSerializer,
+        responses={202: 'Deleted'}
     )
     def delete(self, request):
         try:
@@ -108,7 +126,7 @@ class ItemView(APIView):
         return ItemSerializer
     
     @extend_schema(
-        operation_id="Get item attributes(description, title, price...)",
+        description="Get item attributes(description, title, price...)",
         tags=["Item"]
     ) 
     def get(self, request, slug):
@@ -116,48 +134,37 @@ class ItemView(APIView):
         serializer = ItemSerializer(item)
         return Response(serializer.data)
   
-
-class SearchView(APIView):
-    permission_classes = [] 
-    queryset = Item.objects.all()
-
-    def get_serializer_class(self):
-        return {
-            'categories': CategorySerializer,
-            'sub_categories': SubCategorySerializer,
-            'items': ItemSerializer
-        }
-    
-    @extend_schema(
-        description="Search for categories, subcategories and items by title or by description",
-        tags=["Search"]
-    ) 
-    def get(self, request):
-        item_serializer, sub_category_serializer, category_serializer = '', '', ''
-        query = request.query_params
-        title = query.get('title') if 'title' in query else '$$$$$$'
-        description = query.get('description') if 'description' in query else '$$$$$$'
-        logger.info(title)
-
-        items = Item.objects.filter(
-            Q(title__icontains=title) | 
-            Q(description__icontains=description)
-        )
-        item_serializer = ItemSerializer(items, many=True) 
-        
-        categories = Category.objects.filter(title__icontains=title)
-        category_serializer = CategorySerializer(categories, many=True)
-        
-        sub_categories = SubCategory.objects.filter(title__icontains=title)
-        sub_category_serializer = SubCategorySerializer(sub_categories, many=True)
-        
-        return Response(
-            {
-                'categories': category_serializer.data,
-                'sub_categories': sub_category_serializer.data,
-                'items': item_serializer.data
-            }
-        )
+# TODO faceted search
+#  class SearchView(APIView):
+#      permission_classes = []
+#      queryset = Item.objects.all()
+#
+#      def get(self, request):
+#          item_serializer, sub_category_serializer, category_serializer = '', '', ''
+#          query = request.query_params
+#          title = query.get('title') if 'title' in query else '$$$$$$'
+#          description = query.get('description') if 'description' in query else '$$$$$$'
+#          logger.info(title)
+#
+#          items = Item.objects.filter(
+#              Q(title__icontains=title) |
+#              Q(description__icontains=description)
+#          )
+#          item_serializer = ItemSerializer(items, many=True)
+#
+#          categories = Category.objects.filter(title__icontains=title)
+#          category_serializer = CategorySerializer(categories, many=True)
+#
+#          sub_categories = SubCategory.objects.filter(title__icontains=title)
+#          sub_category_serializer = SubCategorySerializer(sub_categories, many=True)
+#
+#          return Response(
+#              {
+#                  'categories': category_serializer.data,
+#                  'sub_categories': sub_category_serializer.data,
+#                  'items': item_serializer.data
+#              }
+#          )
 
 
 class CategoryView(APIView): 
@@ -166,7 +173,11 @@ class CategoryView(APIView):
 
     def get_serializer_class(self):
         return CategorySerializer
-
+    
+    @extend_schema(
+        description="Get all Categories",
+        tags=["Category"],
+    )
     def get(self, request):
         categories = Category.objects.all()
         category_serializer = CategorySerializer(categories, many=True)
@@ -180,6 +191,10 @@ class SubCategoryView(APIView):
     def get_serializer_class(self):
         return SubCategorySerializer
     
+    @extend_schema(
+        description="Get subcategories of category",
+        tags=["SubCategory"],
+    )
     def get(self, request, slug):
         try:
             category = Category.objects.get(slug=slug)
@@ -197,6 +212,10 @@ class ItemsView(APIView):
     def get_serializer_class(self):
         return ItemSerializer
     
+    @extend_schema(
+        description="Get items in subcategory",
+        tags=["Items"],
+    )
     def get(self, request, category_slug, subcategory_slug):
         try:
             items = Item.objects.filter(sub_category__slug=subcategory_slug)
@@ -213,6 +232,10 @@ class CheckoutView(APIView):
     def get_serializer_class(self):
         return CartItemSerializer
     
+    @extend_schema(
+        description="Same as cart but not editable",
+        tags=["Checkout"],
+    )
     def get(self, request):
         cart, created = Cart.objects.get_or_create(user=request.user)
         cart_items = cart.cart_items.all()

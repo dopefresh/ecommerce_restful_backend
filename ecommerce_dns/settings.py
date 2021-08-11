@@ -9,12 +9,14 @@ https://docs.djangoproject.com/en/3.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.2/ref/settings/
 """
+import os
 
 from pathlib import Path
-from keys import SECRET_KEY, DB_USER, DB_PASSWORD, DB_NAME
+from keys import SECRET_KEY, DB_USER, DB_PASSWORD, DB_NAME, DB_HOST, DB_HOST_DOCKER
 
 from datetime import timedelta
 from loguru import logger
+
 
 logger.add("info.log", format="{time} {level} {message}", 
            level="INFO", rotation="100 KB", compression="zip")
@@ -33,8 +35,10 @@ SECRET_KEY = SECRET_KEY
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-
-ALLOWED_HOSTS = []
+if DEBUG:
+    ALLOWED_HOSTS = ['*']
+else:
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
 
 # Application definition
 INSTALLED_APPS = [
@@ -99,7 +103,7 @@ DATABASES = {
         'NAME': DB_NAME,
         'USER': DB_USER,
         'PASSWORD': DB_PASSWORD,
-        'HOST': '127.0.0.1',
+        'HOST': DB_HOST,
         'PORT': '5432',
     }
 }
@@ -143,6 +147,20 @@ USE_TZ = False
 
 STATIC_URL = '/static/'
 
+if DEBUG:
+    STATIC_DIR = os.path.join(BASE_DIR, 'static')
+    STATICFILES_DIRS = [
+        STATIC_DIR,
+        '/var/www/static/',
+    ]
+else:
+    STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
+    STATICFILES_FINDERS = (
+        'django.contrib.staticfiles.finders.FileSystemFinder',
+        'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+    )
+MEDIA_URL = '/media/'
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
@@ -164,7 +182,7 @@ REST_FRAMEWORK = {
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Your Project API',
-    'DESCRIPTION': 'Your project description',
+    'DESCRIPTION': 'Ecommerce shop API',
     'VERSION': '1.0.0',
 }
 

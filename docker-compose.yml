@@ -1,0 +1,15 @@
+version: '3.7'
+
+services:
+  user_polls:
+    build: .
+    image: user_polls
+    env_file:
+      - ".env"
+    command: python manage.py runserver 0.0.0.0:8000
+    restart: always
+    working_dir: /app
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"

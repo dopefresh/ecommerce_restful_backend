@@ -46,6 +46,7 @@ class CartView(APIView):
     @extend_schema(
         description="Get user cart",
         tags=["Cart"],
+        responses={200: CartItemSerializer(many=True)}
     )
     def get(self, request):
         cart, created = Cart.objects.get_or_create(user=request.user)
@@ -62,7 +63,7 @@ class CartView(APIView):
     @extend_schema(
         description="Add items to user's cart",
         tags=["Cart"],
-        request=CreateCartItemSerializer,
+        request=CreateCartItemSerializer(many=True),
         responses={201: ''}
     )
     def post(self, request):
@@ -83,7 +84,7 @@ class CartView(APIView):
     @extend_schema(
         description="Change item's quantity in user's cart, !!!Sort ascending by title before calling this method. Also call this method with all user's cart items !!!",
         tags=["Cart"],
-        request=CreateCartItemSerializer,
+        request=CreateCartItemSerializer(many=True),
         responses={202: ''},
     )
     def patch(self, request):
@@ -105,7 +106,7 @@ class CartView(APIView):
         description="Delete item from user's cart",
         tags=["Cart"],
         request=CreateCartItemSerializer,
-        responses={202: 'Deleted'}
+        responses={202: ''}
     )
     def delete(self, request):
         try:
@@ -127,7 +128,8 @@ class ItemView(APIView):
     
     @extend_schema(
         description="Get item attributes(description, title, price...)",
-        tags=["Item"]
+        tags=["Item"],
+        responses={200: ItemSerializer}
     ) 
     def get(self, request, slug):
         item = get_object_or_404(Item, slug=slug)
@@ -177,6 +179,7 @@ class CategoryView(APIView):
     @extend_schema(
         description="Get all Categories",
         tags=["Category"],
+        responses={200: CategorySerializer(many=True)}
     )
     def get(self, request):
         categories = Category.objects.all()
@@ -194,6 +197,7 @@ class SubCategoryView(APIView):
     @extend_schema(
         description="Get subcategories of category",
         tags=["SubCategory"],
+        responses={200: SubCategorySerializer(many=True)}
     )
     def get(self, request, slug):
         try:
@@ -215,6 +219,7 @@ class ItemsView(APIView):
     @extend_schema(
         description="Get items in subcategory",
         tags=["Items"],
+        responses={200: ItemSerializer(many=True)}
     )
     def get(self, request, category_slug, subcategory_slug):
         try:
@@ -235,6 +240,7 @@ class CheckoutView(APIView):
     @extend_schema(
         description="Same as cart but not editable",
         tags=["Checkout"],
+        responses={200: CartItemSerializer(many=True)}
     )
     def get(self, request):
         cart, created = Cart.objects.get_or_create(user=request.user)

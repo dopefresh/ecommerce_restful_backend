@@ -6,6 +6,6 @@
 3. poetry install
 4. poetry shell
 5. секретный ключ нужно поменять
-6. в psql, с указанными в файле .env настройками вводим: CREATE DATABASE polls_db;
+6. в psql, с указанными в файле .env настройками вводим: CREATE DATABASE ecommerce_db;
 7. python manage.py migrate
 8. docker-compose up

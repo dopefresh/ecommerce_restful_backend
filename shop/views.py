@@ -4,15 +4,16 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.contrib.auth.models import User
 from django.contrib.postgres.search import SearchVector
 
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, authentication_classes, permission_classes, throttle_classes
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.throttling import UserRateThrottle
 
-from shop.models import Item, CartItem, Cart, SubCategory, Category
+from shop.models import Item, CartItem, Cart, SubCategory, Category, Company, Employee
 from shop.serializers.get_serializers import ItemSerializer, CartItemSerializer, CartSerializer, SubCategorySerializer, CategorySerializer
 from shop.serializers.post_serializers import CreateCartItemSerializer
 
@@ -21,6 +22,7 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExampl
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.extensions import OpenApiAuthenticationExtension
 from typing import List
+from PIL import Image
 
 
 class JWTScheme(OpenApiAuthenticationExtension):
@@ -35,47 +37,77 @@ class JWTScheme(OpenApiAuthenticationExtension):
             "description": "Value should be formatted: `Bearer <key>`"
         }
 
+
+@api_view(['GET'])
+@authentication_classes([])
+@throttle_classes([UserRateThrottle])
+@permission_classes([])
 def get_product_image(request, slug):
+    logger.info(request.query_params)
     product = Item.objects.get(slug=slug)
-    html = f'<img src="{product.product_image.url}" alt="">'
+    width = request.query_params.get('width')
+    height = request.query_params.get('height')
+    html = f'<img src="{product.product_image.url}" width="{width}" height="{height}" alt="">'
     return HttpResponse(html)
 
 
+@api_view(['GET'])
+@authentication_classes([])
+@throttle_classes([UserRateThrottle])
+@permission_classes([])
 def get_products_images(request, category_slug, subcategory_slug):
+    width = request.query_params.get('width')
+    height = request.query_params.get('height')
+    
     products = Item.objects.filter(sub_category__slug=subcategory_slug)
     html = ''
     for product in products:
-        strings = f'<img src="{product.product_image.url}" alt="">\n'
+        strings = f'<img src="{product.product_image.url}" width="{width}" height="{height}" alt="">\n'
         strings += f'<p>{product.slug}</p>\n\n'
         html += strings
     return HttpResponse(html)
 
 
+@api_view(['GET'])
+@authentication_classes([])
+@throttle_classes([UserRateThrottle])
+@permission_classes([])
 def get_company_logos(request, pk):
+    width = request.query_params.get('width')
+    height = request.query_params.get('height')
+    
     company = Company.objects.get(pk=pk)
-    html = f'<img src="{company.logo.url}" alt="">'
+    html = f'<img src="{company.logo.url}" width="{width}" height="{height}" alt="">'
     return HttpResponse(html)
 
 
+@api_view(['GET'])
+@authentication_classes([])
+@throttle_classes([UserRateThrottle])
+@permission_classes([])
 def get_companies_logos(request):
+    width = request.query_params.get('width')
+    height = request.query_params.get('height')
+    
     companies = Company.objects.all()
     html = ''
     for company in companies:
-        strings = f'<img src="{company.logo.url}" alt="">\n'
-        strings += f'<p>{company.name}</p>\n\n'
+        strings = f'<p>{company.name}</p>\n\n'
+        strings += f'<img src="{company.logo.url}" width="{width}" height="{height}" alt="">\n'
         html += strings
     return HttpResponse(html)
 
 
 class CartView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = [UserRateThrottle]
     queryset = CartItem.objects.all()
 
     def get_serializer_class(self):
         return CartItemSerializer
 
     @extend_schema(
-        description="Get user cart",
+        description="Get user's cart",
         tags=["Cart"],
         responses={200: CartItemSerializer(many=True)}
     )
@@ -151,7 +183,7 @@ class CartView(APIView):
 
 class ItemView(APIView):
     permission_classes = []
-    
+    throttle_classes = [UserRateThrottle]
     queryset = Item.objects.all()
 
     def get_serializer_class(self):
@@ -202,6 +234,7 @@ class ItemView(APIView):
 
 class CategoryView(APIView): 
     permission_classes = []
+    throttle_classes = [UserRateThrottle]
     queryset = Category.objects.all()
 
     def get_serializer_class(self):
@@ -220,6 +253,7 @@ class CategoryView(APIView):
 
 class SubCategoryView(APIView):
     permission_classes = []
+    throttle_classes = [UserRateThrottle]
     queryset = SubCategory.objects.all()
 
     def get_serializer_class(self):
@@ -242,6 +276,7 @@ class SubCategoryView(APIView):
 
 class ItemsView(APIView):
     permission_classes = []
+    throttle_classes = [UserRateThrottle]
     queryset = Item.objects.all()
     
     def get_serializer_class(self):
@@ -263,6 +298,7 @@ class ItemsView(APIView):
 
 class CheckoutView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = [UserRateThrottle]
     queryset = CartItem.objects.all() 
     
     def get_serializer_class(self):

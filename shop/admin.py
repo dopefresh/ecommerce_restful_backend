@@ -17,9 +17,10 @@ class EmployeeInline(admin.TabularInline):
 
 
 class CompanyAdmin(admin.ModelAdmin):
-    fields = ['name', 'location', 'phone_number', 'logo']
+    fields = ['name', 'location', 'phone_number', 'logo', 'slug']
     model = Company
     extra = 1
+    prepopulated_fields = {'slug': ('name',)}
     list_display = ('name', 'phone_number',)
     list_filter = ('name', 'phone_number',)
     search_fields = ('name', 'phone_number', 'location',)

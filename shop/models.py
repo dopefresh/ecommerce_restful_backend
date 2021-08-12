@@ -3,6 +3,7 @@ from django.conf import settings
 from django.utils.text import slugify
 from django.contrib.auth.models import User
 
+from PIL import Image
 
 def company_logo_directory(instance, filename):
     return f'{instance.name}/logos/{filename}'
@@ -23,6 +24,7 @@ class Company(models.Model):
         upload_to=company_logo_directory,
         blank=True, null=True
     )
+    slug = models.SlugField(blank=True)
     
     class Meta:
         db_table = 'company'
@@ -30,6 +32,16 @@ class Company(models.Model):
 
     def __str__(self):
         return f'Company name: {self.name}\n{self.phone_number}\n{self.location}'
+
+    def save(self, *args, **kwargs):
+        self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+        
+        imag = Image.open(self.logo.path)
+        if imag.width > 400 or imag.height> 300:
+            output_size = (400, 300)
+            imag.thumbnail(output_size)
+            imag.save(self.logo.path)
 
 
 class Category(models.Model):
@@ -106,6 +118,12 @@ class Item(models.Model):
     def save(self, *args, **kwargs):
         self.slug = slugify(self.title)
         super().save(*args, **kwargs)
+        
+        imag = Image.open(self.product_image.path)
+        if imag.width > 400 or imag.height> 300:
+            output_size = (400, 300)
+            imag.thumbnail(output_size)
+            imag.save(self.product_image.path)
 
 
 class CartItem(models.Model):

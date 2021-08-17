@@ -1,9 +1,9 @@
 from django.db import models
 from django.conf import settings
 from django.utils.text import slugify
-from django.contrib.auth.models import User
 
 from PIL import Image
+
 
 def company_logo_directory(instance, filename):
     return f'{instance.name}/logos/{filename}'
@@ -14,16 +14,16 @@ def company_product_directory(instance, filename):
 
 
 class Company(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-    location = models.CharField(max_length=100)
+    name = models.CharField(max_length=500, unique=True)
+    location = models.CharField(max_length=500)
     phone_number = models.CharField(
-        max_length=12, 
+        max_length=30, 
         blank=False, null=False
     )
-    logo = models.ImageField(
-        upload_to=company_logo_directory,
-        blank=True, null=True
-    )
+    #  logo = models.ImageField(
+    #      upload_to=company_logo_directory,
+    #      blank=True, null=True
+    #  )
     slug = models.SlugField(blank=True)
     
     class Meta:
@@ -37,11 +37,11 @@ class Company(models.Model):
         self.slug = slugify(self.name)
         super().save(*args, **kwargs)
         
-        imag = Image.open(self.logo.path)
-        if imag.width > 400 or imag.height> 300:
-            output_size = (400, 300)
-            imag.thumbnail(output_size)
-            imag.save(self.logo.path)
+        #  imag = Image.open(self.logo.path)
+        #  if imag.width > 400 or imag.height> 300:
+        #      output_size = (400, 300)
+        #      imag.thumbnail(output_size)
+        #      imag.save(self.logo.path)
 
 
 class Category(models.Model):
@@ -49,7 +49,7 @@ class Category(models.Model):
     Category of Product in ecommerce site
     """
     slug = models.SlugField(blank=True)
-    title = models.CharField(max_length=50, unique=True)
+    title = models.CharField(max_length=100, unique=True)
 
     class Meta:
         db_table = 'category'
@@ -68,7 +68,7 @@ class SubCategory(models.Model):
     Subcategory of Product in ecommerce site
     """
     slug = models.SlugField(blank=True)
-    title = models.CharField(max_length=50, unique=True)
+    title = models.CharField(max_length=100, unique=True)
     category = models.ForeignKey('Category', on_delete=models.CASCADE)
     
     class Meta:
@@ -88,13 +88,13 @@ class Item(models.Model):
     """
     Product in ecommerce site
     """
-    title = models.CharField(max_length=50, blank=False, null=False, unique=True)
+    title = models.CharField(max_length=100, blank=False, null=False, unique=True)
     description = models.TextField(blank=True, null=True)
     price = models.IntegerField(blank=False, null=False)
-    product_image = models.ImageField(
-        upload_to=company_product_directory,
-        blank=True, null=True
-    )
+    #  product_image = models.ImageField(
+    #      upload_to=company_product_directory,
+    #      blank=True, null=True
+    #  )
     
     slug = models.SlugField(blank=True)
     sub_category = models.ForeignKey(
@@ -119,11 +119,11 @@ class Item(models.Model):
         self.slug = slugify(self.title)
         super().save(*args, **kwargs)
         
-        imag = Image.open(self.product_image.path)
-        if imag.width > 400 or imag.height> 300:
-            output_size = (400, 300)
-            imag.thumbnail(output_size)
-            imag.save(self.product_image.path)
+        #  imag = Image.open(self.product_image.path)
+        #  if imag.width > 400 or imag.height> 300:
+        #      output_size = (400, 300)
+        #      imag.thumbnail(output_size)
+        #      imag.save(self.product_image.path)
 
 
 class CartItem(models.Model):
@@ -166,21 +166,3 @@ class Cart(models.Model):
         return str(self.user)
 
 
-class Employee(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    company= models.ForeignKey(
-        'Company', 
-        on_delete=models.SET_NULL,
-        blank=True, null=True
-    )
-    phone_number = models.CharField(
-        max_length=12, 
-        blank=True, null=True
-    )
-
-    class Meta:
-        db_table = 'employee'
-        verbose_name_plural = "Работники компании"
-    
-    def __str__(self):
-        return f'{self.user}\n{self.company}\n{self.phone_number}'

@@ -1,6 +1,15 @@
 from django.contrib import admin
 
-from .models import Item, CartItem, Cart, SubCategory, Category, Company, Employee
+from .models import (
+    Item, 
+    CartItem, 
+    Cart, 
+    SubCategory, 
+    Category, 
+    Company, 
+)
+
+from accounts.models import Employee
 
 
 class EmployeeAdmin(admin.ModelAdmin):
@@ -24,6 +33,7 @@ class CompanyAdmin(admin.ModelAdmin):
     list_display = ('name', 'phone_number',)
     list_filter = ('name', 'phone_number',)
     search_fields = ('name', 'phone_number', 'location',)
+    #  inlines = [EmployeeInline]
 
 
 class ItemAdmin(admin.TabularInline):
@@ -31,7 +41,7 @@ class ItemAdmin(admin.TabularInline):
     model = Item
     prepopulated_fields = {'slug': ('title',)}
     extra = 1
-    list_display = ('title', 'price', 'sub_category')  
+    list_display = ('title', 'price', 'sub_category')
     list_filter = ['sub_category', 'price', 'title']
     search_fields = ['sub_category', 'price', 'title']
 
@@ -40,7 +50,7 @@ class SubCategoryAdmin(admin.ModelAdmin):
     fields = ['title', 'slug', 'category']
     model = SubCategory
     prepopulated_fields = {'slug': ('title',)}
-    extra = 1 
+    extra = 1
     inlines = [ItemAdmin]
     list_display = ('title', 'category')
     list_filter = ['category', 'title']
@@ -51,7 +61,7 @@ class SubCategoryInline(admin.TabularInline):
     fields = ['title', 'slug', 'category']
     model = SubCategory
     prepopulated_fields = {'slug': ('title',)}
-    extra = 1 
+    extra = 1
     inlines = [ItemAdmin]
     list_display = ('title', 'category')
     list_filter = ['category', 'title']

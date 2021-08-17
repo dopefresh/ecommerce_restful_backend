@@ -13,7 +13,7 @@ from rest_framework import status
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.throttling import UserRateThrottle
 
-from shop.models import Item, CartItem, Cart, SubCategory, Category, Company, Employee
+from shop.models import Item, CartItem, Cart, SubCategory, Category, Company
 from shop.serializers.get_serializers import ItemSerializer, CartItemSerializer, CartSerializer, SubCategorySerializer, CategorySerializer
 from shop.serializers.post_serializers import CreateCartItemSerializer
 

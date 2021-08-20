@@ -157,9 +157,11 @@ class CartView(APIView):
             ).order_by('title')
             for i in range(len(request.data)):
                 current_cart_item = cart_items[i]
-                current_cart_item.quantity = request.data[i].get('quantity')
+                quantity = int(request.data[i].get('quantity'))
+                current_cart_item.quantity = quantity
             
             CartItem.objects.bulk_update(cart_items, ['quantity'])
+            cart_items.filter(quantity=0).delete()
             return Response('', status=status.HTTP_202_ACCEPTED)
         except Exception as e:
             logger.info(str(e))
@@ -243,10 +245,18 @@ class CategoryView(APIView):
     @extend_schema(
         description="Get all Categories",
         tags=["Category"],
+        parameters=[
+            OpenApiParameter(name='page', type=str),
+            OpenApiParameter(name='items', description='Items per page', type=str)
+        ],
         responses={200: CategorySerializer(many=True)}
     )
     def get(self, request):
-        categories = Category.objects.all()
+        page = int(request.query_params.get('page'))
+        items = int(request.query_params.get('items'))
+        offset = page * items
+        limit = items
+        categories = Category.objects.all()[offset:offset+limit]
         category_serializer = CategorySerializer(categories, many=True)
         return Response(category_serializer.data)
 
@@ -262,12 +272,20 @@ class SubCategoryView(APIView):
     @extend_schema(
         description="Get subcategories of category",
         tags=["SubCategory"],
+        parameters=[
+            OpenApiParameter(name='page', type=str),
+            OpenApiParameter(name='items', description='Items per page', type=str)
+        ],
         responses={200: SubCategorySerializer(many=True)}
     )
     def get(self, request, slug):
         try:
+            page = int(request.query_params.get('page'))
+            items = int(request.query_params.get('items'))
+            offset = page * items
+            limit = items
             category = Category.objects.get(slug=slug)
-            sub_categories = category.subcategory_set.all()
+            sub_categories = category.subcategory_set.all()[offset:offset+limit]
             sub_category_serializer = SubCategorySerializer(sub_categories, many=True)
             return Response(sub_category_serializer.data)
         except Exception as e:
@@ -285,11 +303,19 @@ class ItemsView(APIView):
     @extend_schema(
         description="Get items in subcategory",
         tags=["Items"],
+        parameters=[
+            OpenApiParameter(name='page', type=str),
+            OpenApiParameter(name='items', description='Items per page', type=str)
+        ],
         responses={200: ItemSerializer(many=True)}
     )
     def get(self, request, category_slug, subcategory_slug):
         try:
-            items = Item.objects.filter(sub_category__slug=subcategory_slug)
+            page = int(request.query_params.get('page'))
+            items = int(request.query_params.get('items'))
+            offset = page * items
+            limit = items
+            items = Item.objects.filter(sub_category__slug=subcategory_slug)[offset:offset+limit]
             serializer = ItemSerializer(items, many=True)
             return Response(serializer.data)
         except Exception as e:

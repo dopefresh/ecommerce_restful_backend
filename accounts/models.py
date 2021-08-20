@@ -6,7 +6,14 @@ from shop.models import Company
 
 
 class User(AbstractUser):
-    pass
+    USER_ROLES = (
+        ('user', 'user'),
+        ('employee', 'employee'),
+    )
+    role = models.CharField(
+        choices=USER_ROLES, 
+        max_length=10
+    )
 
 
 class Employee(models.Model):
@@ -21,7 +28,7 @@ class Employee(models.Model):
         related_name='employees'
     )
     phone_number = models.CharField(
-        max_length=30,
+        max_length=25,
         blank=True, null=True
     )
 

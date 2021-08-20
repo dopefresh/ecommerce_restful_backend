@@ -29,7 +29,8 @@ class SignUpUserView(APIView):
     def post(self, request):
         user = User.objects.create_user(
             username=request.data.get('username'),
-            password=request.data.get('password')
+            password=request.data.get('password'),
+            role='user'
         )
         return Response('', status=status.HTTP_201_CREATED)
 
@@ -47,7 +48,8 @@ class SignUpEmployeeView(APIView):
     def post(self, request):
         user = User.objects.create_user(
             username=request.data.get('username'),
-            password=request.data.get('password')
+            password=request.data.get('password'),
+            role='employee'
         )
         Employee.objects.create(
             user=user,

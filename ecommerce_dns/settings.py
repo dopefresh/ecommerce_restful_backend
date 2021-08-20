@@ -12,7 +12,15 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 import os
 
 from pathlib import Path
-from keys import SECRET_KEY, DB_USER, DB_PASSWORD, DB_NAME, DB_HOST, DB_HOST_DOCKER
+from keys import (
+    SECRET_KEY, 
+    DB_USER, 
+    DB_PASSWORD, 
+    DB_NAME, 
+    DB_HOST, 
+    DB_HOST_DOCKER, 
+    TESTDB_NAME
+)
 
 from datetime import timedelta
 from loguru import logger
@@ -104,10 +112,13 @@ DATABASES = {
         'PASSWORD': DB_PASSWORD,
         'HOST': DB_HOST,
         'PORT': '5432',
+        'TEST': {
+            'NAME': DB_NAME,
+        }
     },
-    'test': {
+    'database': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': f'test_{DB_NAME}',
+        'NAME': TESTDB_NAME,
         'USER': DB_USER,
         'PASSWORD': DB_PASSWORD,
         'HOST': DB_HOST,

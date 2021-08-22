@@ -56,46 +56,15 @@ class ClientPmTests(APITestCase):
         """
         Ensure user can watch categories
         """
-        url = reverse('shop:category-list')
-        url += '?items=5&page=1'
-        logger.info(url)
+        url = reverse('shop:category-list') + '?items=5&page=1'
         response = self.client.get(url)
-        response_data = [
-            {
-                "id": 401,
-                "slug": "ejywbnptcbrjksmm",
-                "title": "EJYWbnpTcBRjksmm"
-            },
-            {
-                "id": 402,
-                "slug": "cvozovyykqtk",
-                "title": "cvOzoVyYkQtK"
-            },
-            {
-                "id": 403,
-                "slug": "scirthehrlqwhmg",
-                "title": "scIrThEhRlqWHmg"
-            },
-            {
-                "id": 404,
-                "slug": "qltueviloqtxmc",
-                "title": "QLtUEVIlOQtXmc"
-            },
-            {
-                "id": 405,
-                "slug": "bfjzmpkhhyitvnuvwndf",
-                "title": "bFJzMpkhHYITvnuvWNdf"
-            },
-        ]
-        logger.info(response.data)
-        self.assertEqual(response.data, response_data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
     
     def test_get_subcategories(self):
         """
         Ensure user can watch subcategories
         """
-        url = reverse('shop:sub_category-list', args=['ejywbnptcbrjksmm',]) + '?items=5&page=1'
+        url = reverse('shop:sub_category-list', args=['xflgbkltxwlwtgjavthb',]) + '?items=5&page=1'
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
     
@@ -103,10 +72,11 @@ class ClientPmTests(APITestCase):
         """
         Ensure user can watch items
         """
-        url = reverse('shop:items-list', kwargs={'subcategory_slug': '', 'category_slug': 'ejywbnptcbrjksmm'})
+        url = reverse('shop:items-list', kwargs={'subcategory_slug': 'lqttrqdydcynhr', 'category_slug': 'xflgbkltxwlwtgjavthb'}) + '?items=5&page=1'
         response = self.client.get(url)
+        
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-    
+
     def test_create_cart_items(self):
         """
         Ensure only user can add items to the cart
@@ -116,52 +86,49 @@ class ClientPmTests(APITestCase):
         # TODO
         data = [
             {
-                'slug': 'someslug',
+                'slug': 'sysmazemvzwtjlxltrzzoghporcuo',
                 'quantity': 5
             },
             {
-                'slug': 'someslug',
+                'slug': 'czcucmugoozuyjhcqawk',
                 'quantity': 3
             },
             {
-                'slug': 'someslug',
-                'quantity': 3
-            }
-        ]
-        response = self.client.post(url, data)
-        
-    def test_edit_cart_items(self):
-        """
-        Ensure only user can add items to the cart
-        """
-        self.set_up_credentials('vasilii', 'somepassword', 'user')
-        url = reverse('shop:cart')
-        # TODO
-        data = [
-            {
-                'slug': 'someslug',
-                'quantity': 1
+                'slug': 'abloamuasyhvojjieecrw',
+                'quantity': 100
             },
             {
-                'slug': 'someslug',
-                'quantity': 0
-            },
-            {
-                'slug': 'someslug',
-                'quantity': 1
+                'slug': 'ihtstzjwrfnukpypxnpwsklmytzf',
+                'quantity': 100
             }
         ]
-        response = self.client.patch(url, data)
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-    def test_delete_cart_item(self):
+    def test_edit_cart_items(self):
         self.set_up_credentials('vasilii', 'somepassword', 'user')
         url = reverse('shop:cart')
         # TODO
         data = [
             {
-                'slug': 'someslug',
+                'slug': 'sysmazemvzwtjlxltrzzoghporcuo',
+                'quantity': 5
+            },
+            {
+                'slug': 'czcucmugoozuyjhcqawk',
+                'quantity': 9 
+            },
+            {
+                'slug': 'abloamuasyhvojjieecrw',
+                'quantity': 100
+            },
+            {
+                'slug': 'ihtstzjwrfnukpypxnpwsklmytzf',
                 'quantity': 1
             }
         ]
-        response = self.client.delete(url, data)
-    
+        data.sort(key=lambda item: item['slug'])
+        response = self.client.patch(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+
+        

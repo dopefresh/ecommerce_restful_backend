@@ -1,12 +1,12 @@
 from django.contrib import admin
 
 from .models import (
-    Item, 
-    CartItem, 
-    Cart, 
-    SubCategory, 
-    Category, 
-    Company, 
+    Item,
+    OrderItem,
+    Order,
+    SubCategory,
+    Category,
+    Company,
 )
 
 from accounts.models import Employee
@@ -81,8 +81,8 @@ class CategoryAdmin(admin.ModelAdmin):
 admin.site.register(Item)
 admin.site.register(SubCategory, SubCategoryAdmin)
 admin.site.register(Category, CategoryAdmin)
-admin.site.register(CartItem)
-admin.site.register(Cart)
+admin.site.register(OrderItem)
+admin.site.register(Order)
 admin.site.register(Employee, EmployeeAdmin)
 admin.site.register(Company, CompanyAdmin)
 # admin.site.register(Item)

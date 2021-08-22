@@ -20,10 +20,10 @@ class Company(models.Model):
         max_length=30, 
         blank=False, null=False
     )
-    #  logo = models.ImageField(
-    #      upload_to=company_logo_directory,
-    #      blank=True, null=True
-    #  )
+    logo = models.ImageField(
+        upload_to=company_logo_directory,
+        blank=True, null=True
+    )
     slug = models.SlugField(blank=True)
     
     class Meta:
@@ -37,11 +37,11 @@ class Company(models.Model):
         self.slug = slugify(self.name)
         super().save(*args, **kwargs)
         
-        #  imag = Image.open(self.logo.path)
-        #  if imag.width > 400 or imag.height> 300:
-        #      output_size = (400, 300)
-        #      imag.thumbnail(output_size)
-        #      imag.save(self.logo.path)
+        imag = Image.open(self.logo.path)
+        if imag.width > 400 or imag.height> 300:
+            output_size = (400, 300)
+            imag.thumbnail(output_size)
+            imag.save(self.logo.path)
 
 
 class Category(models.Model):
@@ -91,10 +91,10 @@ class Item(models.Model):
     title = models.CharField(max_length=100, blank=False, null=False, unique=True)
     description = models.TextField(blank=True, null=True)
     price = models.IntegerField(blank=False, null=False)
-    #  product_image = models.ImageField(
-    #      upload_to=company_product_directory,
-    #      blank=True, null=True
-    #  )
+    product_image = models.ImageField(
+        upload_to=company_product_directory,
+        blank=True, null=True
+    )
     
     slug = models.SlugField(blank=True)
     sub_category = models.ForeignKey(
@@ -119,33 +119,33 @@ class Item(models.Model):
         self.slug = slugify(self.title)
         super().save(*args, **kwargs)
         
-        #  imag = Image.open(self.product_image.path)
-        #  if imag.width > 400 or imag.height> 300:
-        #      output_size = (400, 300)
-        #      imag.thumbnail(output_size)
-        #      imag.save(self.product_image.path)
+        imag = Image.open(self.product_image.path)
+        if imag.width > 400 or imag.height> 300:
+            output_size = (400, 300)
+            imag.thumbnail(output_size)
+            imag.save(self.product_image.path)
 
 
-class CartItem(models.Model):
+class OrderItem(models.Model):
     """
-    User items in cart
+    User items in his order
     """
     quantity = models.IntegerField(default=1)
     item = models.ForeignKey('Item', on_delete=models.CASCADE)
-    cart = models.ForeignKey('Cart', related_name='cart_items', on_delete=models.CASCADE)
+    order = models.ForeignKey('Order', related_name='order_items', on_delete=models.CASCADE)
 
     class Meta:
-        db_table = 'cart_item'
+        db_table = 'order_item'
         verbose_name_plural = "Добавленные в корзину пользователем продукты"
-        unique_together=('item', 'cart',)
+        unique_together=('item', 'order',)
 
     def __str__(self):
         return f"{self.item}: {self.quantity}"
 
 
-class Cart(models.Model):
+class Order(models.Model):
     """
-    User's cart object
+    User's order object
     """
     ordered = models.BooleanField(default=False)
     shipped = models.BooleanField(default=False)
@@ -155,11 +155,12 @@ class Cart(models.Model):
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        related_name='orders'
     )
     
     class Meta:
-        db_table = 'cart'
+        db_table = 'order'
         verbose_name_plural = "Корзина пользователя"
 
     def __str__(self):

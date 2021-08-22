@@ -5,6 +5,10 @@ from django.conf import settings
 from shop.models import Company
 
 
+def company_logo_directory(instance, filename):
+    return f'{instance.name}/logos/{filename}'
+
+
 class User(AbstractUser):
     USER_ROLES = (
         ('user', 'user'),
@@ -29,6 +33,10 @@ class Employee(models.Model):
     )
     phone_number = models.CharField(
         max_length=25,
+        blank=True, null=True
+    )
+    photo = models.ImageField(
+        upload_to=company_logo_directory,
         blank=True, null=True
     )
 

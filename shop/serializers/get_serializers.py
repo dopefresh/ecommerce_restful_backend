@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from shop.models import Item, CartItem, Cart, SubCategory, Category
+from shop.models import Item, OrderItem, Order, SubCategory, Category
 
 
 class ItemSerializer(serializers.ModelSerializer):
@@ -9,25 +9,25 @@ class ItemSerializer(serializers.ModelSerializer):
         fields = ('title', 'description', 'price', 'sub_category', 'slug',)
 
 
-class ItemInCartSerializer(serializers.ModelSerializer):
+class ItemInOrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Item
         fields = ('title', 'price', 'sub_category', 'slug',)
 
 
-class CartItemSerializer(serializers.ModelSerializer):
-    item = ItemInCartSerializer(many=False, read_only=True)
+class OrderItemSerializer(serializers.ModelSerializer):
+    item = ItemInOrderSerializer(many=False, read_only=True)
     
     class Meta:
-        model = CartItem
+        model = OrderItem
         fields = ('quantity', 'item',)
 
 
-class CartSerializer(serializers.ModelSerializer):
-    cart_items = CartItemSerializer(read_only=False, many=True)
+class OrderSerializer(serializers.ModelSerializer):
+    cart_items = OrderItemSerializer(read_only=False, many=True)
 
     class Meta:
-        model = Cart
+        model = Order
         fields = ('user', 'ordered', 'shipped', 'ordered_date', 'cart_items',)
 
 

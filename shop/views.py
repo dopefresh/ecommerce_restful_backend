@@ -292,7 +292,7 @@ class SubCategoryView(APIView):
             offset = page * items
             limit = items
             category = Category.objects.get(slug=slug)
-            sub_categories = category.subcategory_set.all()[offset:offset+limit]
+            sub_categories = category.sub_categories.all()[offset:offset+limit]
             sub_category_serializer = SubCategorySerializer(sub_categories, many=True)
             return Response(sub_category_serializer.data)
         except Exception as e:

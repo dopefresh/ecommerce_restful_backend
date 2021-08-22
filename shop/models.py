@@ -69,7 +69,11 @@ class SubCategory(models.Model):
     """
     slug = models.SlugField(blank=True)
     title = models.CharField(max_length=100, unique=True)
-    category = models.ForeignKey('Category', on_delete=models.CASCADE)
+    category = models.ForeignKey(
+        'Category', 
+        on_delete=models.CASCADE,
+        related_name='sub_categories'
+    )
     
     class Meta:
         db_table = 'sub_category'
@@ -100,7 +104,8 @@ class Item(models.Model):
     sub_category = models.ForeignKey(
         'SubCategory', 
         on_delete=models.SET_NULL,
-        null=True
+        null=True,
+        related_name='items'
     )
     company = models.ForeignKey(
         'Company',
@@ -119,11 +124,11 @@ class Item(models.Model):
         self.slug = slugify(self.title)
         super().save(*args, **kwargs)
         
-        imag = Image.open(self.product_image.path)
-        if imag.width > 400 or imag.height> 300:
-            output_size = (400, 300)
-            imag.thumbnail(output_size)
-            imag.save(self.product_image.path)
+        #  imag = Image.open(self.product_image.path)
+        #  if imag.width > 400 or imag.height> 300:
+        #      output_size = (400, 300)
+        #      imag.thumbnail(output_size)
+        #      imag.save(self.product_image.path)
 
 
 class OrderItem(models.Model):

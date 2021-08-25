@@ -121,6 +121,9 @@ class ShopTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_edit_cart_items(self):
+        """
+        Ensure only user can edit items in his cart
+        """
         self.set_up_credentials('vasilii', 'somepassword', 'user')
         
         url = reverse('shop:cart')
@@ -166,4 +169,33 @@ class ShopTests(APITestCase):
         response = self.client.patch(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
 
+    def test_get_cart_items(self):
+        """
+        Ensure only user can watch his current order(cart)
+        """
+        self.set_up_credentials('vasilii', 'somepassword', 'user')
+        
+        url = reverse('shop:cart')
+        data = [
+            {
+                'slug': 'intel-core-i3-10100f-oem',
+                'quantity': 5
+            },
+            {
+                'slug': 'intel-core-i3-10100f-box',
+                'quantity': 9
+            },
+            {
+                'slug': 'intel-core-i5-10100f-oem',
+                'quantity': 100
+            },
+            {
+                'slug': 'intel-core-i7-10100f-oem',
+                'quantity': 1
+            }
+        ]
+        response = self.client.post(url, data, format='json')
+        
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 

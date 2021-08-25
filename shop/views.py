@@ -112,6 +112,8 @@ class CartView(APIView):
         responses={200: OrderItemSerializer(many=True)}
     )
     def get(self, request):
+        logger.info(request.user)
+        logger.info(request.auth)
         order, created = Order.objects.get_or_create(user=request.user)
         order_items = order.order_items.all()
         if not len(order_items):

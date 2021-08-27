@@ -124,11 +124,11 @@ class Item(models.Model):
         self.slug = slugify(self.title)
         super().save(*args, **kwargs)
         
-        #  imag = Image.open(self.product_image.path)
-        #  if imag.width > 400 or imag.height> 300:
-        #      output_size = (400, 300)
-        #      imag.thumbnail(output_size)
-        #      imag.save(self.product_image.path)
+        imag = Image.open(self.product_image.path)
+        if imag.width > 400 or imag.height> 300:
+            output_size = (400, 300)
+            imag.thumbnail(output_size)
+            imag.save(self.product_image.path)
 
 
 class OrderItem(models.Model):
@@ -171,4 +171,37 @@ class Order(models.Model):
     def __str__(self):
         return str(self.user)
 
+
+class Step(models.Model):
+    """
+    Steps, that's order is taking before getting to user
+
+    1. Payment
+    2. Packaging
+    3. Transportation
+    4. Delivery in user's city
+    """
+    
+    name_step = models.CharField(
+        max_length=50, 
+        default='Оплата'
+    )
+    orders = models.ManyToManyField(
+        Order,
+        related_name='steps',
+        through='OrderStep'
+    )
+
+
+class OrderStep(models.Model):
+    step = models.ForeignKey(
+        'Step',
+        on_delete=models.CASCADE
+    )
+    order = models.ForeignKey(
+        'Order',
+        on_delete=models.CASCADE
+    )
+    date_step_begin = models.DateField(null=True)
+    date_step_end = models.DateField(null=True)
 

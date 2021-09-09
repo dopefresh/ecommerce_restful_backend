@@ -17,7 +17,7 @@ class Company(models.Model):
     name = models.CharField(max_length=500, unique=True)
     location = models.CharField(max_length=500)
     phone_number = models.CharField(
-        max_length=30, 
+        max_length=30,
         blank=False, null=False
     )
     logo = models.ImageField(
@@ -25,7 +25,14 @@ class Company(models.Model):
         blank=True, null=True
     )
     slug = models.SlugField(blank=True)
-    
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='companies'
+    )
+
     class Meta:
         db_table = 'company'
         verbose_name_plural = "Компании"
@@ -36,9 +43,9 @@ class Company(models.Model):
     def save(self, *args, **kwargs):
         self.slug = slugify(self.name)
         super().save(*args, **kwargs)
-        
+
         imag = Image.open(self.logo.path)
-        if imag.width > 400 or imag.height> 300:
+        if imag.width > 400 or imag.height > 300:
             output_size = (400, 300)
             imag.thumbnail(output_size)
             imag.save(self.logo.path)
@@ -70,18 +77,17 @@ class SubCategory(models.Model):
     slug = models.SlugField(blank=True)
     title = models.CharField(max_length=100, unique=True)
     category = models.ForeignKey(
-        'Category', 
+        'Category',
         on_delete=models.CASCADE,
         related_name='sub_categories'
     )
-    
+
     class Meta:
         db_table = 'sub_category'
         verbose_name_plural = "Подкатегории товаров"
 
     def __str__(self):
         return self.title
-
 
     def save(self, *args, **kwargs):
         self.slug = slugify(self.title)
@@ -99,10 +105,10 @@ class Item(models.Model):
         upload_to=company_product_directory,
         blank=True, null=True
     )
-    
+
     slug = models.SlugField(blank=True)
     sub_category = models.ForeignKey(
-        'SubCategory', 
+        'SubCategory',
         on_delete=models.SET_NULL,
         null=True,
         related_name='items'
@@ -112,7 +118,7 @@ class Item(models.Model):
         on_delete=models.SET_NULL,
         null=True
     )
-    
+
     class Meta:
         db_table = 'item'
         verbose_name_plural = "Продукты"
@@ -123,9 +129,9 @@ class Item(models.Model):
     def save(self, *args, **kwargs):
         self.slug = slugify(self.title)
         super().save(*args, **kwargs)
-        
+
         imag = Image.open(self.product_image.path)
-        if imag.width > 400 or imag.height> 300:
+        if imag.width > 400 or imag.height > 300:
             output_size = (400, 300)
             imag.thumbnail(output_size)
             imag.save(self.product_image.path)
@@ -142,7 +148,7 @@ class OrderItem(models.Model):
     class Meta:
         db_table = 'order_item'
         verbose_name_plural = "Добавленные в корзину пользователем продукты"
-        unique_together=('item', 'order',)
+        unique_together = ('item', 'order',)
 
     def __str__(self):
         return f"{self.item}: {self.quantity}"
@@ -163,7 +169,7 @@ class Order(models.Model):
         on_delete=models.CASCADE,
         related_name='orders'
     )
-    
+
     class Meta:
         db_table = 'order'
         verbose_name_plural = "Корзина пользователя"
@@ -181,9 +187,9 @@ class Step(models.Model):
     3. Transportation
     4. Delivery in user's city
     """
-    
+
     name_step = models.CharField(
-        max_length=50, 
+        max_length=50,
         default='Оплата'
     )
     orders = models.ManyToManyField(
@@ -204,4 +210,3 @@ class OrderStep(models.Model):
     )
     date_step_begin = models.DateField(null=True)
     date_step_end = models.DateField(null=True)
-

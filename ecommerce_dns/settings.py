@@ -13,12 +13,12 @@ import os
 
 from pathlib import Path
 from keys import (
-    SECRET_KEY, 
-    DB_USER, 
-    DB_PASSWORD, 
-    DB_NAME, 
-    DB_HOST, 
-    DB_HOST_DOCKER, 
+    SECRET_KEY,
+    DB_USER,
+    DB_PASSWORD,
+    DB_NAME,
+    DB_HOST,
+    DB_HOST_DOCKER,
     TESTDB_NAME
 )
 
@@ -26,9 +26,9 @@ from datetime import timedelta
 from loguru import logger
 
 
-logger.add("info.log", format="{time} {level} {message}", 
+logger.add("info.log", format="{time} {level} {message}",
            level="INFO", rotation="100 KB", compression="zip")
-logger.add("error.log", format="{time} {level} {message}", 
+logger.add("error.log", format="{time} {level} {message}",
            level="ERROR", rotation="100 KB", compression="zip")
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -54,7 +54,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles', 
+    'django.contrib.staticfiles',
     'rest_framework_simplejwt',
     'rest_framework',
     'corsheaders',
@@ -66,7 +66,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    # 'corsheaders.middleware.CorsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -76,9 +76,10 @@ MIDDLEWARE = [
 
 # CORS_ORIGIN_ALLOW_ALL = True
 
-# CORS_ALLOWED_ORIGINS = [
-#     'http://localhost:8080'
-# ]
+CORS_ALLOWED_ORIGINS = [
+    'http://127.0.0.1:3000',
+    'http://localhost:3000',
+]
 
 ROOT_URLCONF = 'ecommerce_dns.urls'
 
@@ -120,9 +121,6 @@ DATABASES = {
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
     },
@@ -182,7 +180,7 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         # 'rest_framework.authentication.SessionAuthentication',
         # 'rest_framework.authentication.TokenAuthentication',
-    ), 
+    ),
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.AnonRateThrottle',
@@ -190,7 +188,10 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_THROTTLE_RATES': {
         'anon': '100/day',
-        'user': '1000/day'
+        'user': '1000/day',
+        'order_status': '50/day',
+        'company_year_profit': '50/day',
+        'company_month_profit': '50/day'
     },
 }
 

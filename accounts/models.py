@@ -43,6 +43,9 @@ class User(AbstractUser):
     def __str__(self):
         return f"{self.username} {self.city}"
 
+    class Meta:
+        verbose_name_plural = "Пользователи"
+
 
 class Employee(models.Model):
     user = models.OneToOneField(

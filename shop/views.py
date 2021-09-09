@@ -1,4 +1,4 @@
-from django.db.models import Q, F
+from django.db.models import Q, F, Sum
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponseRedirect, HttpResponse
 from django.contrib.auth.models import User
@@ -8,21 +8,31 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework import status
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.throttling import UserRateThrottle
 
-from shop.models import Item, OrderItem, Order, SubCategory, Category, Company
-from shop.serializers.get_serializers import ItemSerializer, OrderItemSerializer, OrderSerializer, SubCategorySerializer, CategorySerializer
-from shop.serializers.post_serializers import CreateOrderItemSerializer
-
-from loguru import logger
+import datetime
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.extensions import OpenApiAuthenticationExtension
+from loguru import logger
 from typing import List
 from PIL import Image
+
+from shop.models import (
+    Item,
+    OrderItem,
+    Order,
+    SubCategory,
+    Category,
+    Company,
+    OrderStep
+)
+from shop.serializers.get_serializers import ItemSerializer, OrderItemSerializer, OrderSerializer, \
+    SubCategorySerializer, CategorySerializer
+from shop.serializers.post_serializers import CreateOrderItemSerializer
 
 
 class JWTScheme(OpenApiAuthenticationExtension):
@@ -184,7 +194,8 @@ class CartView(APIView):
     )
     def delete(self, request):
         try:
-            order_item = OrderItem.objects.get(order__user=request.user, item__slug=request.data.get('slug'))
+            order_item = OrderItem.objects.get(
+                order__user=request.user, item__slug=request.data.get('slug'))
             order_item.delete()
             return Response('', status=status.HTTP_202_ACCEPTED)
         except Exception as e:
@@ -210,37 +221,14 @@ class ItemView(APIView):
         serializer = ItemSerializer(item)
         return Response(serializer.data)
 
+
 # TODO faceted search
 #  class SearchView(APIView):
 #      permission_classes = []
 #      queryset = Item.objects.all()
 #
 #      def get(self, request):
-#          item_serializer, sub_category_serializer, category_serializer = '', '', ''
-#          query = request.query_params
-#          title = query.get('title') if 'title' in query else '$$$$$$'
-#          description = query.get('description') if 'description' in query else '$$$$$$'
-#          logger.info(title)
-#
-#          items = Item.objects.filter(
-#              Q(title__icontains=title) |
-#              Q(description__icontains=description)
-#          )
-#          item_serializer = ItemSerializer(items, many=True)
-#
-#          categories = Category.objects.filter(title__icontains=title)
-#          category_serializer = CategorySerializer(categories, many=True)
-#
-#          sub_categories = SubCategory.objects.filter(title__icontains=title)
-#          sub_category_serializer = SubCategorySerializer(sub_categories, many=True)
-#
-#          return Response(
-#              {
-#                  'categories': category_serializer.data,
-#                  'sub_categories': sub_category_serializer.data,
-#                  'items': item_serializer.data
-#              }
-#          )
+#          pass
 
 
 class CategoryView(APIView):
@@ -256,16 +244,28 @@ class CategoryView(APIView):
         tags=["Category"],
         parameters=[
             OpenApiParameter(name='page', type=str),
-            OpenApiParameter(name='items', description='Items per page', type=str)
+            OpenApiParameter(
+                name='items', description='Items per page', type=str)
         ],
         responses={200: CategorySerializer(many=True)}
     )
     def get(self, request):
-        page = int(request.query_params.get('page'))
-        items = int(request.query_params.get('items'))
-        offset = page * items
-        limit = items
-        categories = Category.objects.all()[offset:offset+limit]
+        page = request.query_params.get('page')
+        items = request.query_params.get('items')
+        logger.info(page)
+        logger.info(items)
+        if not page is None and not items is None:
+            page, items = int(page), int(items)
+            offset = page * items
+            limit = items
+            try:
+                categories = Category.objects.all()[offset:offset + limit]
+                category_serializer = CategorySerializer(categories, many=True)
+                return Response(category_serializer.data)
+            except Exception as e:
+                logger.error(e)
+                return Response("We don't have so many categories or so many pages", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        categories = Category.objects.all()
         category_serializer = CategorySerializer(categories, many=True)
         return Response(category_serializer.data)
 
@@ -283,7 +283,8 @@ class SubCategoryView(APIView):
         tags=["SubCategory"],
         parameters=[
             OpenApiParameter(name='page', type=str),
-            OpenApiParameter(name='items', description='Items per page', type=str)
+            OpenApiParameter(
+                name='items', description='Items per page', type=str)
         ],
         responses={200: SubCategorySerializer(many=True)}
     )
@@ -294,8 +295,10 @@ class SubCategoryView(APIView):
             offset = page * items
             limit = items
             category = Category.objects.get(slug=slug)
-            sub_categories = category.sub_categories.all()[offset:offset+limit]
-            sub_category_serializer = SubCategorySerializer(sub_categories, many=True)
+            sub_categories = category.sub_categories.all()[
+                offset:offset + limit]
+            sub_category_serializer = SubCategorySerializer(
+                sub_categories, many=True)
             return Response(sub_category_serializer.data)
         except Exception as e:
             return Response(str(e), status=status.HTTP_404_NOT_FOUND)
@@ -314,7 +317,8 @@ class ItemsView(APIView):
         tags=["Items"],
         parameters=[
             OpenApiParameter(name='page', type=str),
-            OpenApiParameter(name='items', description='Items per page', type=str)
+            OpenApiParameter(
+                name='items', description='Items per page', type=str)
         ],
         responses={200: ItemSerializer(many=True)}
     )
@@ -324,7 +328,8 @@ class ItemsView(APIView):
             items = int(request.query_params.get('items'))
             offset = page * items
             limit = items
-            items = Item.objects.filter(sub_category__slug=subcategory_slug)[offset:offset+limit]
+            items = Item.objects.filter(sub_category__slug=subcategory_slug)[
+                offset:offset + limit]
             serializer = ItemSerializer(items, many=True)
             return Response(serializer.data)
         except Exception as e:
@@ -357,3 +362,49 @@ class CheckoutView(APIView):
         return Response(serializer.data)
 
 
+class OrderStatusView(APIView):
+    permission_classes = [IsAuthenticated]
+    throttle_scope = 'order_status'
+
+    @extend_schema(
+        description="Get user's current order status",
+        tags=["Order"],
+        responses={200: OrderItemSerializer(many=True)}
+    )
+    def get(self, request):
+        pass
+
+
+class CompanyYearProfitView(APIView):
+    permission_classes = [IsAdminUser]
+    throttle_scope = 'company_year_profit'
+
+    @extend_schema(
+        description="Get company profit for current year",
+        tags=['Company'],
+        responses={200: float}
+    )
+    def get(self, request):
+        current_year = datetime.datetime.now().year
+        company = Company.objects.get(owner=request.user)
+        payed_steps = OrderStep.objects.filter(
+            date_step_end__isnull=False,
+            date_step_end__year=current_year,
+            step__name_step='Оплата'
+        )
+        order_items = OrderItem.objects.filter(item__company=company).aggregate(
+            total=Sum(F('item__price') * F('quantity')))
+        order_items.filter(order__in=payed_steps.values_list('order'))
+
+
+class CompanyMonthProfitView(APIView):
+    permission_classes = [IsAdminUser]
+    throttle_scope = 'company_month_profit'
+
+    @extend_schema(
+        description="Get company profit for current month",
+        tags=['Company'],
+        responses={200: float}
+    )
+    def get(self, request):
+        pass
